@@ -1,0 +1,67 @@
+#! /usr/bin/env perl
+
+use strict;
+use warnings;
+use Cwd 'getcwd','realpath';
+use File::Spec;
+
+sub fail {
+    print STDERR "error: ";
+    print STDERR @_;
+    print STDERR "\n";
+    print STDERR "\n";
+    print STDERR <<"EOS";
+usage: $0 <path>
+EOS
+    exit 1;
+}
+
+sub start_with
+{
+    return substr($_[0], 0, length($_[1])) eq $_[1];
+}
+
+if($#ARGV > 0) {
+    fail "too many argument";
+}
+
+unless(-e "/usr/local/bin/wcmd") {
+    fail "wcmd not found, please install cbwin";
+}
+
+my $path = $ARGV[0] || getcwd;
+my $realpath= realpath($path);
+
+if(!defined($realpath)) {
+    fail "$path is not valid path";
+}
+my ($user_profile) = `wcmd : SET USERPROFILE` =~ /^USERPROFILE=(.*)\r$/m;
+my $winpath = "";
+if (start_with($realpath, "/mnt/")) {
+    my $drive = substr($realpath, 5, 1);
+    $winpath .= uc $drive;
+    $winpath .= ":";
+    my $temp = substr($realpath, 6);
+    $temp =~ s/\//\\/g;
+    $winpath .= $temp;
+}elsif (start_with($realpath, "/home/")) {
+    $winpath .= $user_profile;
+    $winpath .= "\\AppData\\Local\\lxss";
+    my $temp = $realpath;
+    $temp =~ s/\//\\/g;
+    $winpath .= $temp;
+}elsif (start_with($realpath, "/root/")) {
+    $winpath .= $user_profile;
+    $winpath .= "\\AppData\\Local\\lxss";
+    my $temp = $realpath;
+    $temp =~ s/\//\\/g;
+    $winpath .= $temp;
+}else {
+    $winpath .= $user_profile;
+    $winpath .= "\\AppData\\Local\\lxss\\rootfs";
+    my $temp = $realpath;
+    $temp =~ s/\//\\/g;
+    $winpath .= $temp;
+}
+print $winpath;
+print "\n";
